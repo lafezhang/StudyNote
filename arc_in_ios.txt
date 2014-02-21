@@ -1,0 +1,1 @@
+1.arc只托管没有歧义的指针类型（可保留的指针类型），可保留的指针类型包括：block指针，id、Class、NSObject*等；不包括int*，CFStringRef之类的。
