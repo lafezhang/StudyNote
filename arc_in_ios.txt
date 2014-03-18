@@ -1,1 +1,25 @@
 1.arc只托管没有歧义的指针类型（可保留的指针类型），可保留的指针类型包括：block指针，id、Class、NSObject*等；不包括int*，CFStringRef之类的。
+2._autoreleasing修饰符由编译器自动处理。不需要我们在代码中进行控制。
+3.__weak。给_weak修饰的指针赋值，会将所引用的对象进行autorelease处理
+4.一般对象默认的时strong，但是指针的指针(NSObject**)默认的是autoreleasing。因此NSObject** obj 等价于NSObject* _autoreleasing *obj;
+5.对象指针之间的赋值，必须具有同样的修饰符：
+   比如  NSObject* __weak * obj1 = nil;
+        NSObject* __strong* obj2 = obj1;// 编译错误，obj1和obj2的修饰符应该相等
+   但是如下代码能正确编译：
+   NSError __strong *error = nil;
+	BOOL result = [obj performOperationWithError:&error];// 参数默认为NSError* __autoreleasing*，但是穿进去的却是__strong!
+	是因为编译器对代码进行了处理：
+   NSError __strong *error = nil;
+		NSError __autoreleasing *tmp = error;
+		BOOL result = [obj performOperationWithError:&tmp];// 参数默认为NSError* __autoreleasing*
+		 error = tmp;
+6.__unsafe_unretained，编译器不做任何内存管理处理，只是简单的赋值。在默认情况下，不能把id保存在struct里，编译器会报错，因为struct不属于“可保留”指针，因此不知道如何管理struct的生命周期，也就不能管理保存进来的id。此时可以把struct的成员设置成__unsafe_unretained。
+    struct Obj{
+     NSArray* __unsafe_unretained array; //编译正确
+     NSArray* array; //编译错误
+     }
+7.保留指针类型与非保留指针类型之间的桥接：
+   _bridge  不做任何内存管理
+   _bridge_retained(CFRetain)  由cf框架负责将oc对象CFRetain一下，这样该oc对象在走完正常的arc生命周期之后，因为多了一次retain而没没有相应的多一次release，导致不能将该对象释放。这间接的将该对象的所有权交给了cf框架，cf可以在后面将其CFRelease掉
+   _bridge_transfer(CGRelease) 由CF框架负责将对象release一下
+8.修饰符可以和数组一起工作（不是NSArray，而是 id[])。
