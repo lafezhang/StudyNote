@@ -23,3 +23,59 @@
    _bridge_retained(CFRetain)  由cf框架负责将oc对象CFRetain一下，这样该oc对象在走完正常的arc生命周期之后，因为多了一次retain而没没有相应的多一次release，导致不能将该对象释放。这间接的将该对象的所有权交给了cf框架，cf可以在后面将其CFRelease掉
    _bridge_transfer(CGRelease) 由CF框架负责将对象release一下
 8.修饰符可以和数组一起工作（不是NSArray，而是 id[])。
+9.编译器处理之后的代码：
+   （1）_strong:
+       处理前：
+       id _strong obj = [[Object alloc] init];
+       处理后:
+       id obj = objc_msgSend(Object, @selector(alloc));
+       objc_msgSend(obj, @selector(init));
+       //可以看出，对象在创建完之后引用已经是1，arc未对其进行任何处理
+       
+       
+       处理前：
+       id _strong obj = [NSAarray array];
+       处理后：
+       id obj = objc_msgSend(NSAarray, @selector(array));
+       objc_retainAutoreleasedReturnValue(obj);
+       //对于不属于alloc init copy 家族的函数，返回新创建的对象时
+       //都会将返回的对象先加入到autorelease pool。因此，在这种情况下，
+       //arc会调用objc_retainAutoreleasedReturnValue
+       
+       处理前:
+       + (id)array
+       {
+          return [[NSArray alloc] init];
+       }
+       
+       处理后:
+       + (id)array
+       {
+          NSArray* obj = objc_msgSend(NSArray, @selector(alloc));
+          objc_msgSend(obj, @selector(init));
+          return objc_autoreleaseReturnValue(obj);
+       }
+       // 如前所述，对于非alloc init copy家族的函数，返回创建的对象前
+       // 都会通过objc_autoreleaseReturnValue将其加入到pool中
+       // 但是出于效率的考虑，objc_autoreleaseReturnValue并不总是将其注册到pool中，
+       // 在ReturnValue内部会扫描调用框架，如果检测到在此函数调用框架外调用了retainAutoreleasedValue
+       // 那么就不会将其注册到pool中（因为没有必要了）。这两个函数的协作，优化了代码。
+       
+       处理前：
+       {
+         id __weak obj = obj2;
+       }
+       
+       处理后:
+       id obj = 0;
+       objc_storeWeak(&obj, obj2);
+       objc_storeWeak(&obj, 0); //出了作用域
+       // 可以看到weak修饰符不对refcount有任何影响，只是将obj2与obj进行了关联，obj2作为key，obj作为value
+       // 存储在一个weak table中，当obj2释放时，搜索这个表，将所有obj2对应的value都设置成nil。可以看出过多使用
+       // weak会加重cpu的负荷，因为要搜索这个table。
+			
+			// 每次使用weak变量时，都会将其加到release pool中，下面这段代码将会引起3此的autorelease
+			// NSLog(@"%@", obj);
+			// NSLog(@"%@", obj);
+			// NSLog(@"%@", obj);
+		// 因此在使用weak前，可以先将其赋值给一个strong类型，然后使用这个strong
