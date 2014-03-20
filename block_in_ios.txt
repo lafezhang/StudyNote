@@ -1,0 +1,52 @@
+1. block一般都是在栈上创建的，如果作为参数传给某个函数，需要将其拷贝到堆上。
+   ios自带的方法，那些明确使用block的（xxxxUsingBlock, dispatch_async）都会在内部自动将其拷贝到栈上。
+   如果不是这些函数，那么需要我们手动拷贝，调用 block的copy函数即可。
+2. block从栈拷贝到堆发生在以下情况：
+	 （1）调用block的copy
+	 （2）从函数中返回block对象
+	 （3）将block赋值给strong对象
+	 （4）ios框架中明确使用block作为参数的函数
+3.block从栈拷贝到堆，同时会引起捕获的变量从堆拷贝到栈，相当于在block对象内部有了一个与被捕获对象具有相同修饰符的成员：
+     id _strong obj = [NSObject alloc] init];
+     dispatch_async(main, ^{
+     NSLog("%@", obk);
+     }
+     
+     等价于
+     id _strong obj = [NSObject alloc] init];
+     Block bb1 = [Block alloc] init]; // Block由编译器生成的一个类
+     bb1.obj = obj; // Block类内有一个obj成员，修饰符与obj一样，是strong，如果obj是weak，那么Block的obj也是weak，可以用这个来消除环引用
+4.block的环引用
+    @interface Test
+    {
+      Block blk;
+    }
+    
+    @implelmention Test
+    {
+    -(id)init
+    {
+      blk = ^{
+      NSLog("%@", self); //这里将引起blk内保留self的强引用，self对blk也有强引用，从而引起环引用
+      }
+    }
+    
+    // 解决办法一：
+    -(id)init
+    {
+     __weak id weakself = self;
+     blk = ^{
+     NSLog("%@", weakself);//按照3所述，这里的block对象中得self成员也是weak修饰符
+     }
+    }
+    }
+    // 解决办法二：
+    -(id)init
+    {
+    __block id ss = self;
+      blk = ^{
+      NSLog("%@", ss);
+      ss = nil; //手动解除环引用
+      
+      }
+    }
