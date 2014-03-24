@@ -50,3 +50,51 @@
       
       }
     }
+5.block与变量捕获
+  block的内部结构一般具有下面的内存布局：
+  Struct Block
+  {
+     function_pointer;  //该block将执行的函数的指针
+     
+     int a;     // 捕获的栈变量
+     char * b;  // 捕获的栈变量
+     struct_type c; //捕获的结构
+     class_cpp  d; // 捕获的C++栈对象，将引起拷贝构造
+     
+     Block(function_pointer fp, int a, char* b, struct_type c, class_cpp d) //构造函数
+     {
+     	  this->function pointer = fp;
+     	  this-> ....
+     }
+  }
+  编译器在创建该block时，将直接使用捕获变量来创建Block对象，此时Block对象存在于栈上，所有block函数中使用的变量
+  都变成了Block对象的成员。
+  
+  如果声明了一个__block 变量， 那么该变量不再是简单的int char* 等类型，而是用一个BlockByRef结构的变量：
+  __block int a = 0;
+  a++;
+  (void)(^blk1)() = ^{a++;}
+  (void)(^blk2)() = ^{a++;}
+  
+  转换成：
+  struct BlockByRef  //__block int类型定义由编译器生成
+  {
+    BlockByRef* _fowarding;
+    int a ;
+  }
+  
+  struct Block
+  {
+     function_pointer;
+     BlockByRef* a;   //捕获的是编译器转换后的类型
+     
+     Block(functionPointer fp, BlockByRef* a)  //构造函数
+     {
+      this->a = a;
+     }
+  }
+  
+  BlockByRef a = BlockByRef(&a, 0); //声明了一个BlockByRef的对象，而不是int对象
+  a->_fowarding->a++;        //不再是直接使用a，而是通过其中的一个_foarding来间接使用
+  Block blk1 = Block(.., &a);  //把BlockByRef传入Block，Block在函数中使用a时也是通过fowading来间接使用
+  Block blk2 = Block(.., &a);// 两个block用的时同一个BlockByRef对象，因而实现了在block中共享变量
