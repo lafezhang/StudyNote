@@ -98,3 +98,5 @@
   a->_fowarding->a++;        //不再是直接使用a，而是通过其中的一个_foarding来间接使用
   Block blk1 = Block(.., &a);  //把BlockByRef传入Block，Block在函数中使用a时也是通过fowading来间接使用
   Block blk2 = Block(.., &a);// 两个block用的时同一个BlockByRef对象，因而实现了在block中共享变量
+6.当一个block对象从栈拷贝到堆上，捕获的变量也会从栈拷贝到堆，如果捕获的变量是__block类型的变量，那么原BlockByRef中得
+  fowarding指针会从this改为堆上新拷贝的变量，以后通过a->fowarding->a来访问的a变量的时候，访问的就是堆上的变量
