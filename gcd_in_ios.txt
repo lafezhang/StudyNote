@@ -1,0 +1,47 @@
+1.内核维护线程的创建和执行
+  内核维护一个线程池，在添加任务到内核的work_queue时，会首先检测任务的overcommit标志，
+  如果为true，则总是创建新线程来执行任务；否则就唤醒一个空闲的线程来执行。
+  线程的运行函数：
+  worker_main()
+  {
+     for(;;)
+      {
+
+     fetch_a_work_to_do();
+     sleep_and_wait_for_more_work();
+
+      }
+  }
+  线程运行在一个死循环内，每次循环都是从队列中取出一个work来执行，如果队列为空，则会在一个信号量
+  上等待，直到再次往work_queue中添加work时，有了新任务以后被唤醒。
+2.内核work_queue
+  work_queue与线程并不是一一对应的，work_queue并不拥有线程。当往queue中添加work时，会创建新线程
+  或用已有的空闲线程来执行。也就是说在同一个queue里添加多个work，这些work可能会在不同的线程上运行；
+  同一个线程运行的work也可能来自多个不同的queue。
+3.dispatch_queue
+  dq与内核wq是一一对应的，添加到dq的任务最终会被添加到wq而执行。但是何时添加，添加到哪个wq，由libdispatch
+  来决定。
+  dispatchlib在派发任务时，会将用户提交给dq的函数指针进行包装，包装到一个统一的函数里，在这个函数里执行用户提交的函数，
+  在这个包装函数里，负责调度用户提交的函数任务。调度的时候，遵循“取出----执行----释放”的流程。而在取出的
+  操作里，包含了另一个派发的过程。因此派发是一个循环嵌套的逻辑，每次派发都会在包装函数里引起另一个派发。
+  因此，一旦开始派发任务，dq中所有的任务都会在不同的线程中派发出去。
+  添加给内核queue的work:
+  work_thread(dq)
+  {
+    wake_up(dq);
+    pop_a_task_from_dq;
+    run_task;
+  }
+ 而wake_up(dq)
+ {
+   如果还有pending的用户提交的任务，将work_thread作为任务提交给内核queue
+ }
+  因此可看出来dq的一次派发就等于全部派发。但是不会全部执行，这事因为内核queue会根据线程池的大小来决定给交给内核queue的task何时
+  被执行。
+4. dispatch_sync
+   (1)提交到并行queue
+      dispatchlib会直接进入内核，在当前线程执行该任务，本质上就不会将任务添加到dq，可以忽略dq的存在
+  （2）提交到串行queue
+      如果提交到串行queue，那么在此操作时，dq的任务队列肯定为空。然后会和提交到并行queue一样，在当前线程执行任务
+5.dispatch_async
+   不管提交到并行queue还是串行queue，都不会在当前线程执行
