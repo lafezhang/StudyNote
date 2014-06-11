@@ -1,0 +1,2 @@
+auto layout中的scrollview与其他uiview的auto layout不同，contentsize是根据所有subview的布局推断出来的。对scrollview的约束，只会影响其自身的frame，而不会影响其contentSize。
+可以理解为，初始scrollArea的左上角已经定了，就是CGPointZero，但是其size不确定，因此其trailing和bottom都不确定。在布局子view的时候，子view可以根据左上角点作为布局的起始点，布局完之后，所有子view所占的区域应该是确定的，这时候scrllview的contentsize就可以根据这个区域来推断出来了。
