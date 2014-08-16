@@ -1,0 +1,7 @@
+在uicollectionview从前一个layout1改变到后一个layout2时，如果指定了使用动画，那么动画过程如下：
+0.大前提：动画前和动画后的状态是已知的，动画前的状态就是当前状态，是通过询问layout1的layoutAttributesForElementsInRect方法获取的，动画后的状态是最终状态，是通过询问layout2的layoutAttributesForElementsInRect获取的。
+
+1.动画过程中得每个cell涉及到4个状态，layout1中得init1和final1，layout2中得init2和final2。
+2.如果init1==final1 && init2==final2，这时4个状态就退化为两个状态：final1和final2，这时候的动画就只是从final1到final2的平滑过渡。
+3.如果上述条件不成立，即任何一个init状态不等于final状态，那么将会有两个并行动画，一个动画是从init1过渡到final1，另一个是从init2过渡到final2.
+4.如果final1为nil，那么final1会转化成与init1相同，但是有一个淡入淡出效果的状态；如果init2为nil，则也是一样，init2转化为final2，有一个淡入淡出效果。
