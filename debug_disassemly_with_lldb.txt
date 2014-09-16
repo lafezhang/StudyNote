@@ -1,0 +1,26 @@
+ebp为栈基寄存器，esp为栈顶寄存器，在一个函数中，ebp始终是不变的。
+在函数开始部分，如：
+0x89640:  pushl  %ebp
+0x89641:  movl   %esp, %ebp
+0x89643:  pushl  %ebx
+0x89644:  pushl  %edi
+0x89645:  pushl  %esi
+0x89646:  subl   $0x2c, %esp
+0x89649:  calll  0x8964e                   ; -[ViewController aaa:bbb:] + 14 at ViewController.m:24
+0x8964e:  popl   %eax
+0x8964f:  movl   0x14(%ebp), %ecx  ;最后一个参数
+0x89652:  movl   0x10(%ebp), %edx  ;倒数第二个参数
+0x89655:  movl   0xc(%ebp), %esi   ;第二个参数，_cmd
+0x89658:  movl   0x8(%ebp), %edi   ;第一个参数，_self
+0x8965b:  leal   -0x18(%ebp), %ebx
+0x8965e:  movl   %edi, -0x10(%ebp)
+0x89661:  movl   %esi, -0x14(%ebp)
+0x89664:  movl   $0x0, -0x18(%ebp)
+
+如何打印每个参数？
+1.ebp+0x14为最后一个参数的地址。我们只要将这个地址赋值给一个id对象，然后po该对象即可
+  expression id** $cc = (id**)($ebp+0x14)
+  po *$cc
+2.打印self
+  expression id** $cc = (id**)($ebp+0x8)
+  po *$cc
