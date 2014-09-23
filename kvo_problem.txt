@@ -1,0 +1,21 @@
+不要在被观察者dealloc期间removeobserver，这会引起莫名其妙的问题。
+
+@interface Observer
+{
+
+}
+
+@interface Observee
+{
+  -(void)start{
+     [ObserverInstance add observer:self….];
+  }
+
+  -(void)dealloc {
+     [ObserveerInstance removeObserver]; //在此处remove会引起问题！！！
+  }
+}
+
+I think there is a design issue here. The observed object should not have to care about it's observers. You say you want to remove the observers from the observed objects dealloc method. But why does it get deallocated? If it's still observed there is an ownership somewhere thus the object will not be dealloced. Good design results in no observers left by the time dealloc is called.
+
+Imagine a view that registers itself as an observer to a model object. This model object is either retained in the view, or in the controller. The model object will not call it's dealloc as long as it's retained somewhere. Only when the last ownership is released, it should call dealloc. So say all ownerships are released, except for the view/viewcontroller and there's one observer left (the view). Now before the view/viewcontroller releases its ownership over the model object, it should also remove the view as an observer. So by the time the dealloc method is called, there should be no observer left.
