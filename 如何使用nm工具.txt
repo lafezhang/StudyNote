@@ -1,0 +1,16 @@
+$ nm -arch arm hello 
+
+0000000100007de8 t -[SaySomething say:]
+                 U _OBJC_CLASS_$_NSAutoreleasePool
+                 U _OBJC_CLASS_$_NSObject
+0000000100008160 S _OBJC_CLASS_$_SaySomething
+                 U _OBJC_METACLASS_$_NSObject
+0000000100008138 S _OBJC_METACLASS_$_SaySomething
+                 U ___CFConstantStringClassReference
+0000000100000000 T __mh_execute_header
+                 U __objc_empty_cache
+0000000100007e34 T _main
+                 U _objc_msgSend
+                 U _printf
+                 U dyld_stub_binder
+The symbol type is defined by the character preceding the symbol name:• Symbols labeled with a U are undefined, which often occurs when the symbol is referenced, but doesn’t exist inside the binary. These typically refer to functions that exist in shared libraries that the application is linked to. In your hello binary, the puts function is present in the standard C library that your binary links to, so the function itself doesn’t exist in your binary.• Symbols marked with a T are found in the binary’s text section. This is also known as the code section and is where code resides.• Symbols marked with a D are found in the binary’s data section. This is the part of the binary in which initialized data is stored. Subsequently, uninitialized data can be stored in the BSS section of the binary, marked with a B.• Symbols marked with an A are absolute symbols, whose value is guaranteed not to change, even with further linking.• Symbols marked with an S are stored in a section for uninitialized data for small objects, while symbols marked with a G are stored in a section for initialized data for small objects.• Symbols marked with a C are common symbols. These are typically uninitialized global variables. Unix allows multiple instances of common symbols with the same name to be stored in the common section, but at the cost of performance and sometimes size. Most compilers have flags allowing uninitialized global symbols to also be stored in the data section.• Symbols marked with an I are indirect references to other symbols.• Symbols marked with an N are debugging symbols.• Symbols marked with an R are symbols present in a read-only data section.• Symbols marked with a V or a W are weak symbols. When a weak symbol is linked with a normal symbol, the normal symbol is used instead of the weak symbol, and no error occurs. If the weak symbol is linked and the symbol is not defined any- where else, the value of the weak symbol becomes zero (when marked with a V) or system-defined (when marked with a W) and no error occurs.

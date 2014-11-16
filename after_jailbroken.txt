@@ -1,0 +1,7 @@
+1.手机上通过cydia安装openssh, GNU Debugger，adv-cmds，otools，ldid
+2.电脑上安装usbmuxd,
+  wget http://cgit.sukimashita.com/usbmuxd.git/snapshot/usbmuxd-1.0.8.tar.bz2
+tar xjfv usbmuxd-1.0.8.tar.bz2
+cd usbmuxd-1.0.8/python-client/
+python tcprelay.py -t 22:2222
+3.ssh连接到手机 
